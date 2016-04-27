@@ -121,16 +121,8 @@ class predication_engine:
         le,age,industry,occupation,education,race,gender,employment,weeks_worked,salary=self.encode_input(le,age,industry,occupation,education,race,gender,employment,weeks_worked,salary)
         x=self.construct_input_matrix(age,industry,occupation,education,race,gender,employment,weeks_worked,salary)
         res=gnb.predict(x)
-        #write results to file
-        try:
-            os.remove('results')
-        except OSError:
-            pass
-        f=open('results','a')
         #compare with expected results
         print('Checking result accuracy...')
-        for i in xrange(len(x)):
-            f.write(str(res[i])+','+str(salary[i])+'\n')
         return self.compute_metrics(res,salary)
     
     def compute_metrics(self,y_pred,y_true):
@@ -165,7 +157,7 @@ class predication_engine:
         try:
             os.remove('extracted.data')
             os.remove('extracted.test')
-            #os.remove('census-income.data')
+            os.remove('census-income.data')
             os.remove('census-income.test')
         except OSError:
             pass
