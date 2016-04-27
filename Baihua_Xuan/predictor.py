@@ -2,6 +2,7 @@ import numpy
 import scipy
 import sklearn
 import pandas
+from sklearn import svm
     
 # Class predictor
 # Used to analyze and perform machine learning tasks on the 1990 census data
@@ -83,43 +84,90 @@ class predictor:
             return 14
 
     def cleanData(self):
+        # Producing label based on an inidividual's income, using the threshold of 50000
         self.table['LABEL'] = self.table['INCOME1'].apply(self.produceLabel, args = (50000,))
+
+        # Dropping the income column
         self.table.drop('INCOME1', axis = 1, inplace = True)
+
+        # Categorize occupations into smaller groups
         self.table['OCCUP'] = self.table['OCCUP'].apply(self.classifyOccup)
+
+        # Categorize industry into smaller groups
         self.table['INDUSTRY'] = self.table['INDUSTRY'].apply(self.classifyIndustry)
 
+        # Create dummy variables for categorical variables since svm works better with binary variables
+        self.table = pandas.get_dummies(self.table, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
+
 if __name__ == '__main__':
-    print 'Executing script for predicting salary'
-    mPredictor = predictor('census_data.txt', 'census_header.txt')
     
-    table = mPredictor.table
+    print 'Executing script for predicting salary'
+
+    print 'Reading in data and constructing the matrix'
+
+    mPredictor = predictor('census_data.txt', 'census_header.txt')
+
+    print 'Cleaning and transforming the data'
+
+    mPredictor.cleanData()
+
+    print 'Obtaining different samples for training and testing'
+    
+    table = mPredictor.getTable()
     training_sample = table.sample(50000)
     testing_sample1 = table.sample(30000)
     testing_sample2 = table.sample(30000)
     testing_sample3 = table.sample(30000)
 
     # Produce an array of labels, each corresponding to a row in the table containing feature values
-    training_labels = numpy.array(sample['LABEL'])
+    training_labels = numpy.array(training_sample['LABEL'])
     testing_labels1 = numpy.array(testing_sample1['LABEL'])
     testing_labels2 = numpy.array(testing_sample2['LABEL'])
     testing_labels3 = numpy.array(testing_sample3['LABEL'])
 
-    # Capture only the features' values in the table, without the label column
-    training_features = sample.iloc[:, 0:len(training_sample.columns.values) - 1]
+    # Use all columns other than the label column for training the classifier
+    training_features = training_sample.iloc[:, 0:len(training_sample.columns.values) - 1]
     testing_features1 = testing_sample1.iloc[:, 0:len(testing_sample1.columns.values) - 1]
     testing_features2 = testing_sample2.iloc[:, 0:len(testing_sample2.columns.values) - 1]
     testing_features3 = testing_sample3.iloc[:, 0:len(testing_sample3.columns.values) - 1]
 
+    '''
     # Create dummy variables for categorical variables since svm works better with binary variables
     training_features = pandas.get_dummies(training_features, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
     testing_features1 = pandas.get_dummies(testing_features1, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
     testing_features2 = pandas.get_dummies(testing_features2, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
     testing_features3 = pandas.get_dummies(testing_features3, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
+    '''
 
-    # Produce an numpy array of feature values to feed into SVM
+    # Turn the table into 2D numpy arrays so that they can be fed into the SVM classifier
     training_features = numpy.array(training_features)
     testing_features1 = numpy.array(testing_features1)
     testing_features2 = numpy.array(testing_features2)
     testing_features3 = numpy.array(testing_features3)
 
-    
+    print 'Training and testing features and labels are ready. Initializing svm classifier'
+
+    # Initialize the SVM classifier
+    classifier = svm.SVC()
+
+    print 'Training in process...'
+
+    # Train the SVM classifier
+    classifier.fit(training_features, training_labels)
+
+    print 'Finished training'
+
+    print 'Making predictions using testing samples'
+
+    # Make predictions
+    prediction_result1 = classifier.predict(testing_features1)
+    prediction_result2 = classifier.predict(testing_features2)
+    prediction_result3 = classifier.predict(testing_features3)
+
+    num_correct1 = (prediction_result1 == testing_labels1).sum()
+    num_correct2 = (prediction_result2 == testing_labels2).sum()
+    num_correct3 = (prediction_result3 == testing_labels3).sum()
+
+    print 'Model accuracy for sample 1 is: ' + str(1.0 * num_correct1 / len(testing_labels1))
+    print 'Model accuracy for sample 2 is: ' + str(1.0 * num_correct2 / len(testing_labels2))
+    print 'Model accuracy for sample 3 is: ' + str(1.0 * num_correct3 / len(testing_labels3))

@@ -1,3 +1,9 @@
 *.data
 
 *.data.txt
+
+census_data.txt
+
+census_header.txt
+
+*.pyc
