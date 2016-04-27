@@ -3,6 +3,7 @@ import scipy
 import sklearn
 import pandas
 from sklearn import svm
+from sklearn import tree
 from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import roc_auc_score
@@ -12,6 +13,8 @@ from sklearn.metrics import roc_auc_score
 # obtained from the UCI Machine Learning Repository
  
 class predictor:
+    
+    # Constructor
     def __init__(self, data_src, header_src):
         
         # Read in the parsed header file and construct a pandas table
@@ -25,8 +28,13 @@ class predictor:
         # Only retain attributes that are considered relevant
         self.table = self.table[attrs]
 
+    # Getter: table field
     def getTable(self):
         return self.table
+
+    # Getter: get original table withou dummy variables
+    def getWhole(self):
+        return self.whole
 
     # Function used to transform the income column into correct labels
     # depending on the given threshold (0: < threshold, 1: >= threshold)
@@ -37,6 +45,8 @@ class predictor:
             return 1
 
     # Function used to map occupation codes into smaller categories
+    # Mappings between occupation and code can be found at:
+    # http://archive.ics.uci.edu/ml/machine-learning-databases/census1990-mld/USCensus1990raw.coding.htm
     def classifyOccup(self, code):
         if (0 <= code and code <= 202):
             return 0
@@ -54,6 +64,8 @@ class predictor:
             return 6
     
     # Function used to map industry codes into smaller categories
+    # Mappings between industry and code can be found at:
+    # http://archive.ics.uci.edu/ml/machine-learning-databases/census1990-mld/USCensus1990raw.coding.htm
     def classifyIndustry(self, code):
         if (0 <= code and code <= 39):
             return 0
@@ -86,6 +98,10 @@ class predictor:
         else:
             return 14
 
+    # Function for cleaning the data set
+    # Producing labels based on one's income and append it to table
+    # Dropping the income column
+    # Transform occupation and industry code into smaller categories using helper functions
     def cleanData(self):
         # Producing label based on an inidividual's income, using the threshold of 50000
         self.table['LABEL'] = self.table['INCOME1'].apply(self.produceLabel, args = (50000,))
@@ -99,9 +115,14 @@ class predictor:
         # Categorize industry into smaller groups
         self.table['INDUSTRY'] = self.table['INDUSTRY'].apply(self.classifyIndustry)
 
+        # Save the whole table without dummy variables
+        self.whole = self.table
+
         # Create dummy variables for categorical variables since svm works better with binary variables
         self.table = pandas.get_dummies(self.table, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
 
+    # Function for evaluating a model
+    # Metrics used: recall, precision and area under the roc curve
     def evaluate(self, true_label, predicted_label):
         recall = recall_score(true_label, predicted_label)
         precision = precision_score(true_label, predicted_label)
@@ -126,56 +147,122 @@ if __name__ == '__main__':
 
     print 'Obtaining different samples for training and testing'
     
+    # Use getWhole() for dec_tree, getTable() for svm
     table = mPredictor.getTable()
-    training_sample = table.sample(50000)
-    testing_sample1 = table.sample(30000)
-    testing_sample2 = table.sample(30000)
-    testing_sample3 = table.sample(30000)
+    whole_table = mPredictor.getWhole()
 
-    # Produce an array of labels, each corresponding to a row in the table containing feature values
-    training_labels = numpy.array(training_sample['LABEL'])
-    testing_labels1 = numpy.array(testing_sample1['LABEL'])
-    testing_labels2 = numpy.array(testing_sample2['LABEL'])
-    testing_labels3 = numpy.array(testing_sample3['LABEL'])
+    # Training and testing samples for svm
+    tr_sam = table.sample(50000)
+    ts_sam1 = table.sample(30000)
+    ts_sam2 = table.sample(30000)
+    ts_sam3 = table.sample(30000)
 
-    # Use all columns other than the label column for training the classifier
-    training_features = training_sample.iloc[:, 0:len(training_sample.columns.values) - 1]
-    testing_features1 = testing_sample1.iloc[:, 0:len(testing_sample1.columns.values) - 1]
-    testing_features2 = testing_sample2.iloc[:, 0:len(testing_sample2.columns.values) - 1]
-    testing_features3 = testing_sample3.iloc[:, 0:len(testing_sample3.columns.values) - 1]
+    # Testing samples for dec_tree
+    ts_sam1_w = whole_table.sample(300000)
+    ts_sam2_w = whole_table.sample(300000)
+    ts_sam3_w = whole_table.sample(300000)
+
+    # Produce arrays of labels, each corresponding to the label of a row in the table
+    tr_lab = numpy.array(tr_sam['LABEL'])
+    ts_lab1 = numpy.array(ts_sam1['LABEL'])
+    ts_lab2 = numpy.array(ts_sam2['LABEL'])
+    ts_lab3 = numpy.array(ts_sam3['LABEL'])
+    
+    # Labels for dec_tree
+    tr_lab_w = numpy.array(whole_table['LABEL'])
+    ts_lab1_w = numpy.array(ts_sam1_w['LABEL'])
+    ts_lab2_w = numpy.array(ts_sam2_w['LABEL'])
+    ts_lab3_w = numpy.array(ts_sam3_w['LABEL'])
+
+
+    # Extract all columns other than the label column for training the classifier
+    tr_f = tr_sam.iloc[:, 0:len(tr_sam.columns.values) - 1]
+    ts_f1 = ts_sam1.iloc[:, 0:len(ts_sam1.columns.values) - 1]
+    ts_f2 = ts_sam2.iloc[:, 0:len(ts_sam2.columns.values) - 1]
+    ts_f3 = ts_sam3.iloc[:, 0:len(ts_sam3.columns.values) - 1]
+
+    tr_f_w = whole_table.iloc[:, 0:len(whole_table.columns.values) - 1]
+    ts_f1_w = ts_sam1_w.iloc[:, 0:len(ts_sam1_w.columns.values) - 1]
+    ts_f2_w = ts_sam2_w.iloc[:, 0:len(ts_sam2_w.columns.values) - 1]
+    ts_f3_w = ts_sam3_w.iloc[:, 0:len(ts_sam3_w.columns.values) - 1]
+
 
     # Turn the table into 2D numpy arrays so that they can be fed into the SVM classifier
-    training_features = numpy.array(training_features)
-    testing_features1 = numpy.array(testing_features1)
-    testing_features2 = numpy.array(testing_features2)
-    testing_features3 = numpy.array(testing_features3)
+    tr_f = numpy.array(tr_f)
+    ts_f1 = numpy.array(ts_f1)
+    ts_f2 = numpy.array(ts_f2)
+    ts_f3 = numpy.array(ts_f3)
+    
+    tr_f_w = numpy.array(tr_f_w)
+    ts_f1_w = numpy.array(ts_f1_w)
+    ts_f2_w = numpy.array(ts_f2_w)
+    ts_f3_w = numpy.array(ts_f3_w)
 
     print 'Training and testing features and labels are ready. Initializing svm classifier'
 
     # Initialize the SVM classifier
     classifier = svm.SVC()
 
-    print 'Training in process...'
+    print 'Training in process... (svm)'
 
     # Train the SVM classifier
-    classifier.fit(training_features, training_labels)
+    classifier.fit(tr_f, tr_lab)
 
-    print 'Finished training'
+    print 'Finished training (svm)'
 
-    print 'Making predictions using testing samples'
+    print 'Making predictions using testing samples (svm)'
 
     # Make predictions
-    prediction_result1 = classifier.predict(testing_features1)
-    prediction_result2 = classifier.predict(testing_features2)
-    prediction_result3 = classifier.predict(testing_features3)
+    svm_res1 = classifier.predict(ts_f1)
+    svm_res2 = classifier.predict(ts_f2)
+    svm_res3 = classifier.predict(ts_f3)
     
     # Evaluations
 
-    print 'Evaluating test sample 1'
-    mPredictor.evaluate(testing_labels1, prediction_result1)
+    print 'Evaluating test sample 1 (svm)'
+    mPredictor.evaluate(ts_lab1, svm_res1)
 
-    print 'Evaluating test sample 2'
-    mPredictor.evaluate(testing_labels2, prediction_result2)
+    print 'Evaluating test sample 2 (svm)'
+    mPredictor.evaluate(ts_lab2, svm_res2)
 
-    print 'Evaluating test sample 3'
-    mPredictor.evaluate(testing_labels3, prediction_result3)
+    print 'Evaluating test sample 3 (svm)'
+    mPredictor.evaluate(ts_lab3, svm_res3)
+
+
+    print '---------------------------------------------------\n'
+
+    print 'Now switching to using decision tree as the classfier'
+
+    print 'Initialzing decision tree classifier' 
+
+    dec_tree = tree.DecisionTreeClassifier()
+
+    print 'Training in process... (decision tree)'
+
+    print 'Finished training (decision tree)'
+
+    print 'Making predictions using the whole table (decision tree)'
+
+    # Training the decision tree classifier
+    # This is trained using the whole table
+
+    dec_tree.fit(tr_f_w, tr_lab_w)
+
+    tree_res1 = dec_tree.predict(ts_f1_w)
+    tree_res2 = dec_tree.predict(ts_f2_w)
+    tree_res3 = dec_tree.predict(ts_f3_w)
+
+    # Evaluations
+
+    print 'Evaluating prediction over the entire dataset (decision tree) \n'
+
+    print 'Sample1 (dec_tree)'
+    mPredictor.evaluate(ts_lab1_w, tree_res1)
+
+    print 'Sample2 (dec_tree)'
+    mPredictor.evaluate(ts_lab2_w, tree_res2)
+
+    print 'Sample3 (dec_tree)'
+    mPredictor.evaluate(ts_lab3_w, tree_res3)
+
+    

@@ -4,8 +4,7 @@ TODOs:
 2. Choose relevant attributes for analysis (DONE)
 3. Choose classifers to use
    - SVM (DONE)
-   - Decision Tree (TODO)
-   - Naive Bayes (TODO)
+   - Decision Tree (DONE)
 4. Use AUC to gauge accuracy (DONE)
-5. Better formatted and commented code (TODO)
+5. Better formatted and commented code (DONE)
 6. Write up report (TODO)
