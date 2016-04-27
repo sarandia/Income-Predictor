@@ -8,4 +8,9 @@ The flow is:
     5. Predict using test data
     6. Compute evaluation metrics
 
+The user can choose one of the following classifiers:
+    1. Decision Tree
+    2. Support Vector Machine (SVM)
+    3. k-Nearest-Neighbor (kNN), where k=15
+
 Several columns of the data source contain too many null entries and are therefore not used in the predication.
