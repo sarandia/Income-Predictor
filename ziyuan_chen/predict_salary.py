@@ -51,8 +51,8 @@ class predication_engine:
         if classifier=='1':
             gnb = tree.DecisionTreeClassifier() 
         elif classifier=='2':
-            gnb = SGDClassifier(loss="log", penalty="l2")
-            #gnb = sklearn.svm.LinearSVC()
+            #gnb = SGDClassifier(loss="log", penalty="l2")
+            gnb = sklearn.svm.LinearSVC()
         elif classifier=='3':
             gnb = NearestCentroid()
         gnb.fit(x, salary)
@@ -124,20 +124,61 @@ class predication_engine:
         print('Checking result accuracy...')
         for i in xrange(len(x)):
             f.write(str(res[i])+','+str(salary[i])+'\n')
-        self.compute_metrics(res,salary)
-        return 
+        return self.compute_metrics(res,salary)
+        '''
+        true_positives = 0
+        true_negatives = 0
+        false_positives = 0
+        false_negatives = 0
+        #write results to file
+        try:
+            os.remove('results')
+        except OSError:
+            pass
+        f=open('results','a')
+        #compare with expected results
+        print('Checking result accuracy...')
+        for i in xrange(len(x)):
+            f.write(str(res[i])+','+str(salary[i])+'\n')
+            if res[i]==salary[i]:
+                if res[i]==0:
+                    true_positives+=1
+                else:
+                    true_negatives+=1
+            elif res[i]!=0:
+                false_negatives+=1
+            else:
+                false_positives+=1
+        #calculate % of correct predications
+        size=len(x)
+        true_positive_prob = float(true_positives)/size
+        true_negative_prob = float(true_negatives)/size
+        false_positive_prob = float(false_positives)/size
+        false_negative_prob = float(false_negatives)/size
+        precision = true_positive_prob/(true_positive_prob+false_positive_prob)
+        recall = true_positive_prob/(true_positive_prob+false_negative_prob)
+        F1 = 2*precision*recall/(precision+recall)
+        print('---------------------------Result Analysis:---------------------------')
+        print('Number of True Positives: '+str(true_positives)+' Percentage of Hits: '+str(100*true_positive_prob)+'%')
+        print('Number of True Negatives: '+str(true_negatives)+' Percentage of Hits: '+str(100*true_negative_prob)+'%')
+        print('Number of False Positives: '+str(false_positives)+' Percentage of Type I Error: '+str(100*false_positive_prob)+'%')
+        print('Number of False Negatives: '+str(false_negatives)+' Percentage of Type II Error: '+str(100*false_negative_prob)+'%')
+        print('Precision: '+str(precision))
+        print('Recall: '+str(recall))
+        print('F1 Score: '+str(F1))
+        print('----------------------------------------------------------------------')
+        '''
     
     def compute_metrics(self,y_pred,y_true):
-        os.remove('x')
-        f=open('x','a')
-        for i in range(len(y_pred)):
-            f.write(str(y_pred[i])+","+str(y_true[i])+'\n')
         recall = recall_score(y_true,y_pred,average='micro')
         precision = precision_score(y_true,y_pred,average='micro')
         auc = roc_auc_score(y_true,y_pred,average='micro')
-        print recall
-        print precision
-        print(auc)
+        return precision,recall,auc
+
+    def show_results(self,metrics):
+        print('Precision: '+str(metrics[0]))
+        print('Recall: '+str(metrics[1]))
+        print('AUC: '+str(metrics[2]))
 
     def cleanup(self):
         try:
@@ -165,7 +206,8 @@ class predication_engine:
         learning_time=time.time()-learning_start
         print('Learning took '+str(learning_time)+' seconds')
         test_set = self.load_data(self.testdata)
-        self.test(test_set,classifier,label_encoder)
+        metrics=self.test(test_set,classifier,label_encoder)
+        self.show_results(metrics)
         self.cleanup()
         print('Program finished. The run took '+str(time.time()-start_time)+' seconds')
 
