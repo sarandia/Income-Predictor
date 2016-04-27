@@ -6,6 +6,6 @@ TODOs:
    - SVM (DONE)
    - Decision Tree (TODO)
    - Naive Bayes (TODO)
-4. Use AUC to gauge accuracy (TODO)
+4. Use AUC to gauge accuracy (DONE)
 5. Better formatted and commented code (TODO)
 6. Write up report (TODO)

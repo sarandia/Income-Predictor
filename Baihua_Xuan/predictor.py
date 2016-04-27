@@ -3,6 +3,9 @@ import scipy
 import sklearn
 import pandas
 from sklearn import svm
+from sklearn.metrics import recall_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import roc_auc_score
     
 # Class predictor
 # Used to analyze and perform machine learning tasks on the 1990 census data
@@ -99,6 +102,16 @@ class predictor:
         # Create dummy variables for categorical variables since svm works better with binary variables
         self.table = pandas.get_dummies(self.table, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
 
+    def evaluate(self, true_label, predicted_label):
+        recall = recall_score(true_label, predicted_label)
+        precision = precision_score(true_label, predicted_label)
+        auc = roc_auc_score(true_label, predicted_label)
+
+        print 'The recall of the model is: ' + str(recall)
+        print 'The precision of the model is: ' + str(precision)
+        print 'The auc of the model is: ' + str(auc)
+        print '\n'
+
 if __name__ == '__main__':
     
     print 'Executing script for predicting salary'
@@ -131,14 +144,6 @@ if __name__ == '__main__':
     testing_features2 = testing_sample2.iloc[:, 0:len(testing_sample2.columns.values) - 1]
     testing_features3 = testing_sample3.iloc[:, 0:len(testing_sample3.columns.values) - 1]
 
-    '''
-    # Create dummy variables for categorical variables since svm works better with binary variables
-    training_features = pandas.get_dummies(training_features, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
-    testing_features1 = pandas.get_dummies(testing_features1, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
-    testing_features2 = pandas.get_dummies(testing_features2, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
-    testing_features3 = pandas.get_dummies(testing_features3, columns = ['CITIZEN', 'ENGLISH', 'YEARSCH', 'MARITAL', 'FERTIL', 'CLASS', 'INDUSTRY', 'OCCUP', 'POWSTATE', 'YEARWRK']).astype(numpy.int8)
-    '''
-
     # Turn the table into 2D numpy arrays so that they can be fed into the SVM classifier
     training_features = numpy.array(training_features)
     testing_features1 = numpy.array(testing_features1)
@@ -163,11 +168,14 @@ if __name__ == '__main__':
     prediction_result1 = classifier.predict(testing_features1)
     prediction_result2 = classifier.predict(testing_features2)
     prediction_result3 = classifier.predict(testing_features3)
+    
+    # Evaluations
 
-    num_correct1 = (prediction_result1 == testing_labels1).sum()
-    num_correct2 = (prediction_result2 == testing_labels2).sum()
-    num_correct3 = (prediction_result3 == testing_labels3).sum()
+    print 'Evaluating test sample 1'
+    mPredictor.evaluate(testing_labels1, prediction_result1)
 
-    print 'Model accuracy for sample 1 is: ' + str(1.0 * num_correct1 / len(testing_labels1))
-    print 'Model accuracy for sample 2 is: ' + str(1.0 * num_correct2 / len(testing_labels2))
-    print 'Model accuracy for sample 3 is: ' + str(1.0 * num_correct3 / len(testing_labels3))
+    print 'Evaluating test sample 2'
+    mPredictor.evaluate(testing_labels2, prediction_result2)
+
+    print 'Evaluating test sample 3'
+    mPredictor.evaluate(testing_labels3, prediction_result3)
