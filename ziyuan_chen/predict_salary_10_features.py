@@ -137,49 +137,6 @@ class predication_engine:
         for i in xrange(len(x)):
             f.write(str(res[i])+','+str(salary[i])+'\n')
         return self.compute_metrics(res,salary)
-        '''
-        true_positives = 0
-        true_negatives = 0
-        false_positives = 0
-        false_negatives = 0
-        #write results to file
-        try:
-            os.remove('results')
-        except OSError:
-            pass
-        f=open('results','a')
-        #compare with expected results
-        print('Checking result accuracy...')
-        for i in xrange(len(x)):
-            f.write(str(res[i])+','+str(salary[i])+'\n')
-            if res[i]==salary[i]:
-                if res[i]==0:
-                    true_positives+=1
-                else:
-                    true_negatives+=1
-            elif res[i]!=0:
-                false_negatives+=1
-            else:
-                false_positives+=1
-        #calculate % of correct predications
-        size=len(x)
-        true_positive_prob = float(true_positives)/size
-        true_negative_prob = float(true_negatives)/size
-        false_positive_prob = float(false_positives)/size
-        false_negative_prob = float(false_negatives)/size
-        precision = true_positive_prob/(true_positive_prob+false_positive_prob)
-        recall = true_positive_prob/(true_positive_prob+false_negative_prob)
-        F1 = 2*precision*recall/(precision+recall)
-        print('---------------------------Result Analysis:---------------------------')
-        print('Number of True Positives: '+str(true_positives)+' Percentage of Hits: '+str(100*true_positive_prob)+'%')
-        print('Number of True Negatives: '+str(true_negatives)+' Percentage of Hits: '+str(100*true_negative_prob)+'%')
-        print('Number of False Positives: '+str(false_positives)+' Percentage of Type I Error: '+str(100*false_positive_prob)+'%')
-        print('Number of False Negatives: '+str(false_negatives)+' Percentage of Type II Error: '+str(100*false_negative_prob)+'%')
-        print('Precision: '+str(precision))
-        print('Recall: '+str(recall))
-        print('F1 Score: '+str(F1))
-        print('----------------------------------------------------------------------')
-        '''
     
     def compute_metrics(self,y_pred,y_true):
         recall = recall_score(y_true,y_pred,average='micro')
