@@ -1,41 +1,39 @@
 import numpy
 import pandas
-import csv
 
-'''
-with open('ss13pusb.csv', 'rb') as csvfile:
-    dataSource = csv.reader(csvfile)
-    cnt = 0
-    while cnt < 10:
-        print dataSource.next()
-        cnt += 1
-'''
 
-# get the headers (in the first line of the data)
-# headers = []
-# with open('ss13pubs.csv', 'rb') as csvfile:
-#    data_source = csv.reader(csvfile)
-#    headers = data_source.next()
+class predictor:
 
-# the list of features to use
-# [Record Type (RT), Housing serial number (SERIALNO), State (ST), Age (AGEP), 
-# Citizenship Status (CIT), Class of worker (COW), Mean of transportation to work (JWTR),
-# Marital status (MAR), Educational attainment (SCHL), Sex (SEX) Wages or Salary income 
-# past 12 months (WAGP), Usual hours worked per week past 12 months (WKHP), WKW (weeks 
-# work during last year), Recoded field of degree (FOD1P)]
-features = ['RT', 'SERIALNO', 'ST', 'AGEP', 'CIT', 'JWTR', 'MAR', 'SCHL', 'SEX', \
-            'WAGP', 'WKHP', 'WKW', 'FOD1P']
+    def __init__(self):
+        self.table = []
 
-# Read data from file
-dataframe = pandas.read_csv('ss13pusb.csv', na_values='', header=0, \
-                              nrows=10)
+    def load_data(self, filename):
+        
+        # the list of features of interest to use
+        # [Record Type (RT), Housing serial number (SERIALNO), State (ST), Age (AGEP), 
+        # Citizenship Status (CIT), Class of worker (COW), Mean of transportation to work (JWTR),
+        # Marital status (MAR), Educational attainment (SCHL), Sex (SEX), Wages or Salary income 
+        # past 12 months (WAGP), Usual hours worked per week past 12 months (WKHP), WKW (weeks 
+        # work during last year), Recoded field of degree (FOD1P)]
+        features = ['RT', 'SERIALNO', 'ST', 'AGEP', 'CIT', 'JWTR', 'MAR', 'SCHL', 'SEX', \
+                    'WAGP', 'WKHP', 'WKW', 'FOD1P']
 
-data_array = dataframe.values
+        # Read data from file
+        dataframe = pandas.read_csv(filename, na_values='', header=0, \
+                                    usecols=features, nrows=100)
 
-'''
-# test parsing in input
-data_list = data_array.tolist()
+        self.table = dataframe.values
 
-for person in data_list:
-    print person
-'''
+    def test_data(self):
+        data_list = self.table.tolist()
+
+        for person in data_list:
+            print person
+
+    def get_table(self):
+        return self.table
+
+if __name__ == '__main__':
+    p = predictor()
+    p.load_data('ss13pus.csv')
+    p.test_data()
