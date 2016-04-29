@@ -72,7 +72,9 @@ class predictor:
     # format the matrix data into target and features
     # this function needs to be recalled anytime the features
     # of the prediction change to avoid null or nan data
-    # is_classification determines if the test is classification into salary
+    # feature_indexes = the indexes of values that will be used as features in our prediction,
+    # taken from the self.useful_features array
+    # is_classification = boolean value determines if the test is classification into salary
     # ranges vs. regression of salary
     def format_data(self, feature_indexes, is_classification=True):
         salary = []
@@ -110,7 +112,8 @@ class predictor:
     # train and predict the dataset
     def train_and_predict(self):        
         # this portion contains classification test
-        print "Starting classification test..."
+        print 'Single feature prediction:'
+        print 'Starting classification test...'
         for i in self.useful_features:
             salary, features = self.format_data([i], True)
 
@@ -145,6 +148,30 @@ class predictor:
             pred = reg.predict(feature_test)
             print 'Accuracy score for feature [', self.all_features_list[i],']: with regression', \
                 reg.score(feature_test, target_test)
+
+        # this portion contains prediction using two most useful single features from result above:
+        # WKHP = usual work hours in the last 12 months (index 10)
+        # WKW = weeks work in the last 12 months (index 11)
+        print '\nStarting prediction using two features...'
+        salary, features = self.format_data([10, 11], True)
+
+        # randomize the datapoints to avoid bias, also split the data into training and testing group
+        feature_train, feature_test, target_train, target_test = train_test_split(features, salary, \
+                                                                                  test_size=self.test_portion, \
+                                                                                  random_state=42)
+        names = ['Naive Bayes', 'Decision Tree']
+        clfs = [
+            MultinomialNB(),
+            DecisionTreeClassifier(min_samples_split=3, max_depth=6)]
+                            
+        for name, clf in zip(names, clfs):
+            clf.fit(feature_train, target_train)
+            pred = clf.predict(feature_test)
+            print 'Accuracy score for features [WKHP, WKW]: with ', \
+                name, ': ', accuracy_score(pred, target_test)
+
+        print '\n'
+        
 
 if __name__ == '__main__':
     p = predictor()
