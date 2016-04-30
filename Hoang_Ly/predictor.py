@@ -15,7 +15,7 @@ class predictor:
         self.matrix = []
 
         # number of datapoints (i.e persons)
-        self.num_of_datapoints = 100000
+        self.num_of_datapoints = 500000
 
         # classification range of salary
         # e.g. if this number is 25000, the range will be:
@@ -24,36 +24,37 @@ class predictor:
 
         # portion of the testing data in relative to total data
         # 0.4 means 40% testing data and 60% training data
-        self.test_portion = 0.6
+        self.test_portion = 0.3
 
         # the list of features of interest to use
         # [Record Type (RT), Housing serial number (SERIALNO), State (ST), Age (AGEP), 
         # Citizenship Status (CIT), Mean of transportation to work (JWTR),
         # Marital status (MAR), Educational attainment (SCHL), Sex (SEX), Wages or Salary income 
         # past 12 months (WAGP), Usual hours worked per week past 12 months (WKHP), WKW (weeks 
-        # work during last year), Recoded field of degree (FOD1P)]
+        # work during last year), Recoded field of degree (FOD1P), Industry Code (INDP)]
         self.all_features_list = ['RT', 'SERIALNO', 'ST', 'AGEP', 'CIT', 'JWTR', 'MAR', 'SCHL', 'SEX', \
-                    'WAGP', 'WKHP', 'WKW', 'FOD1P']
+                                  'WAGP', 'WKHP', 'WKW', 'FOD1P', 'INDP']
 
         # useful features that could be use and single feature in prediction
-        self.useful_features = [3, 4, 5, 6, 7, 8, 10, 11, 12]
+        self.useful_features = [3, 4, 5, 6, 7, 8, 10, 11, 12, 13]
 
         # list containing the index of features for prediction:
         # 0 = RT, 1 = SERIALNO, 2 = ST, 3 = AGEP, 4 = CIT, 5 = JWTR, 6 = MAR, 7 = SCHL, 8 = SEX,
-        # 10 = WKHP, 11 = WKW, 12 = FOD1P
+        # 10 = WKHP, 11 = WKW, 12 = FOD1P, 13 = INDP
         # The list should not contains 9 because salary is target that we are trying to predict
 
+
     # load the data from file into numpy array
-    def load_data(self, filename):
+    def load_data(self, filename, num_of_instances=self.num_of_datapoints):
         # Read data from file
         # Use self.num_of_datapoints if it is set, else load all the file
         if self.num_of_datapoints is None:
             dataframe = pandas.read_csv(filename, na_values='', header=0, usecols=self.all_features_list)
         else:
             dataframe = pandas.read_csv(filename, na_values='', header=0, \
-                                        usecols=self.all_features_list, nrows=self.num_of_datapoints)
-
+                                        usecols=self.all_features_list, nrows=num_of_instances)
         self.matrix = dataframe.values
+
 
     # test the data loaded from file
     def test_data(self):
@@ -61,15 +62,18 @@ class predictor:
         for person in data_list:
             print person
 
+
     # return the matrix data
     def get_table(self):
         return self.matrix
+
 
     # get the features from the user
     def input_features(self):
         print 'Please enter feature(s) you would like to use:'
 
-    # format the matrix data into target and features
+
+    # format the matrix data into target (salary) and features numpy arrays
     # this function needs to be recalled anytime the features
     # of the prediction change to avoid null or nan data
     # feature_indexes = the indexes of values that will be used as features in our prediction,
@@ -107,7 +111,75 @@ class predictor:
             print salary[i], 'and', features[i]
         '''
         return salary, features
+
+
+    # Returns a salary numpy array and a features numpy array for team work combination
+    # The format of the features array is: 
+    # [AGE, SEX, EDUCATION, INDUSTRY_CODE, WEEKS_WORKED_LAST_YEAR]
+    # which corresponds to our feature indexes: [3, 8, 7, 11, 13]
+    # There are also important encoding fixtures in this function to make sure
+    # the values of the features are compatible to group's data
+    def format_data_combine(self, filename, feature_indexes=[3, 8, 7, 13, 11]):
+        self.load_data(filename, 50000)
+        salary = []
+        features = []
+        for person in self.matrix:
+            if person[0] == 'P':
+                wage = person[9]
+                if not math.isnan(wage):
+                    tmp_datapoint = []
+                    # determines if the datapoint is valid so that it would be
+                    # appende to the matrix
+                    append = True
+                    for index in feature_indexes:
+                        try:
+                            person[index]
+                        except IndexError:
+                            print 'error feature not present'
+                        value = person[index]
+                        if not value == 'NaN' and not math.isnan(value):
+                            # AGE (index == 3), INDUSTRY_CODE (index == 13)
+                            # and WEEKS_WORKED_LAST_YEAR feature always pass
+                            # SEX feature
+                            if index == 8:
+                                # my data has the Male as 1 and Female as 2
+                                # group data has Male as 0 and Female as 1
+                                value = value - 1
+                            
+                            # Education Level SCHL feature
+                            elif index == 7:
+                                if value in [4, 5, 6, 7]:
+                                    value = 4
+                                elif value in [8, 9, 10, 11]:
+                                    value = 5
+                                elif value in [12, 13, 14, 15]:
+                                    value -= 6
+                                elif value in [16, 17]:
+                                    value = 10
+                                elif value in [18, 19]:
+                                    value = 11
+                                elif value == 20:
+                                    value = 13
+                                elif value in [21, 22, 23, 24]:
+                                    value -= 7
+                            tmp_datapoint.append(float(value))
+
+                        else:
+                             append = False
+                        
+                    # append the salary and features to respective list
+                    if append:
+                        if wage > 50000:
+                            salary.append(1)
+                        else:
+                            salary.append(0)
+                        features.append(tmp_datapoint)
                 
+        # test for data formatting
+        for i in range(0, len(salary)):
+            print salary[i], 'and', features[i]
+        return salary, features
+
     
     # train and predict the dataset
     def train_and_predict(self):        
@@ -124,7 +196,7 @@ class predictor:
             names = ['Naive Bayes', 'Decision Tree']
             clfs = [
                 MultinomialNB(),
-                DecisionTreeClassifier(min_samples_split=3, max_depth=6)]
+                DecisionTreeClassifier(min_samples_split=4, max_depth=6)]
                             
             for name, clf in zip(names, clfs):
                 clf.fit(feature_train, target_train)
@@ -146,7 +218,7 @@ class predictor:
             reg.fit(feature_train, target_train)
 
             pred = reg.predict(feature_test)
-            print 'Accuracy score for feature [', self.all_features_list[i],']: with regression', \
+            print 'R^2 score for feature [', self.all_features_list[i],']: with regression', \
                 reg.score(feature_test, target_test)
 
         # this portion contains prediction using two most useful single features from result above:
@@ -156,13 +228,14 @@ class predictor:
         salary, features = self.format_data([10, 11], True)
 
         # randomize the datapoints to avoid bias, also split the data into training and testing group
-        feature_train, feature_test, target_train, target_test = train_test_split(features, salary, \
-                                                                                  test_size=self.test_portion, \
+        feature_train, feature_test, target_train, target_test = train_test_split(features, salary,\
+                                                                                  test_size=self.test_portion,\
                                                                                   random_state=42)
+        
         names = ['Naive Bayes', 'Decision Tree']
         clfs = [
             MultinomialNB(),
-            DecisionTreeClassifier(min_samples_split=3, max_depth=6)]
+            DecisionTreeClassifier(min_samples_split=4, max_depth=6)]
                             
         for name, clf in zip(names, clfs):
             clf.fit(feature_train, target_train)
@@ -171,11 +244,14 @@ class predictor:
                 name, ': ', accuracy_score(pred, target_test)
 
         print '\n'
-        
+
 
 if __name__ == '__main__':
     p = predictor()
+    # test for function returning numpy arrays for group combination
+    # p.format_data_combine('ss13pus.csv')
     p.load_data('ss13pus.csv')
-#    p.test_data()
-#    p.format_data([3], True)
+
+    # p.test_data()
+    # p.format_data([3], True)
     p.train_and_predict()
