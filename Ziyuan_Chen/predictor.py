@@ -9,10 +9,8 @@ from sklearn.metrics import recall_score
 from sklearn.metrics import precision_score
 from sklearn.metrics import roc_auc_score
 from sklearn.preprocessing import label_binarize
-from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
 from sklearn import neighbors
-import random
 import time
 
 class prediction_engine:
@@ -51,9 +49,11 @@ class prediction_engine:
             row=(age[i],sex[i],education[i],industry[i],weeks_worked[i])
             x.append(row)
         y=salary
+        '''
         c=open('see_result','a')
         for i in range(len(x)):
             c.write(str(x[i])+"..."+str(y[i])+"\n")
+        '''
         return x,y
 
     def encode_sex(self,sex):
