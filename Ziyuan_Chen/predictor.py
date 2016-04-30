@@ -12,9 +12,137 @@ from sklearn.preprocessing import label_binarize
 from sklearn.linear_model import SGDClassifier
 from sklearn.metrics import accuracy_score
 from sklearn import neighbors
+import random
 import time
 
-class predication_engine:
+class prediction_engine:
+    def combined_predict(self):#provide input matrix for combined prediction
+        #take only attribute columns that are needed
+        f=open('census-income.data','r')
+        res_file=open('temp_data','a')
+        #extract useful features
+        for line in f:
+            new_line=line.strip().split(",")
+            new_line=(new_line[0],new_line[12],new_line[4],new_line[2],new_line[39],new_line[41])
+            res_file.write(','.join(new_line)+'\n')
+        #load csv into Pandas Dataframe
+        df = pandas.read_csv('temp_data',names=['age','sex','education','industry code','weeks worked in a year','salary'])
+        array = df.values[0:50000]
+        age,sex,education,industry,weeks_worked,salary = self.construct_feature_columns_combined_predict(array)
+        weeks_worked_new=[]
+        #categorize weeks worked for combined predication
+        for code in weeks_worked:
+            weeks_worked_new.append(self.classifyWeek(code))
+        weeks_worked = weeks_worked_new
+        #encode education levels
+        education_new=[]
+        for edu in education:
+            education_new.append(self.encode_education(edu))
+        education=education_new
+        #encoded sex. Male=0, Female=1
+        sex_new=[]
+        for s in sex:
+            sex_new.append(self.encode_sex(s))
+        sex=sex_new
+        os.remove('temp_data')
+        #construct input matrix
+        x=[]
+        for i in xrange(0,len(age)):
+            row=(age[i],sex[i],education[i],industry[i],weeks_worked[i])
+            x.append(row)
+        y=salary
+        c=open('see_result','a')
+        for i in range(len(x)):
+            c.write(str(x[i])+"..."+str(y[i])+"\n")
+        return x,y
+
+    def encode_sex(self,sex):
+        if sex.find('Male')!=-1:
+            return 0
+        else:
+            return 1
+
+    def encode_education(self,edu): #for combined predication
+        if edu.find('Children')!=-1:
+            return 0
+        elif edu.find('7th and 8th grade')!=-1:
+            return 5
+        elif edu.find('9th grade')!=-1:
+            return 6
+        elif edu.find('10th grade')!=-1:
+            return 7
+        elif edu.find('High school graduate')!=-1:
+            return 10
+        elif edu.find('11th grade')!=-1:
+            return 8
+        elif edu.find('12th grade no diploma')!=-1:
+            return 9
+        elif edu.find('5th or 6th grade')!=-1:
+            return 5
+        elif edu.find('Less than 1st grade')!=-1:
+            return 3
+        elif edu.find('Bachelors')!=-1:
+            return 14
+        elif edu.find('1st 2nd 3rd or 4th grade')!=-1:
+            return 4
+        elif edu.find('Some college but no degree')!=-1:
+            return 11
+        elif edu.find('Masters degree')!=-1:
+            return 15
+        elif edu.find('Associates degree-occup')!=-1:
+            return 12
+        elif edu.find('Associates degree-academic')!=-1:
+            return 13
+        elif edu.find('Doctorate')!=-1:
+            return 17
+        elif edu.find('Prof school degree')!=-1:
+            return 16
+        else:
+            return 1
+
+    def classifyWeek(self, code): #written by Baihua Xuan, for combined predication
+        if code < 14:
+            return 6
+        elif (14 <= code and code <= 26):
+           return 5
+        elif (27 <= code and code <= 39):
+           return 4
+        elif (40 <= code and code <= 47):
+           return 3
+        elif (48 <= code and code <= 49):
+           return 2
+        else:
+           return 1
+    
+    def construct_feature_columns_combined_predict(self,array):
+        age=[]
+        sex=[]
+        education=[]
+        industry=[]
+        weeks_worked=[]
+        salary=[]
+        #construct feature columns
+        for a in array:
+            age.append(a[0])
+            sex.append(a[1])
+            education.append(a[2])
+            industry.append(a[3])
+            weeks_worked.append(a[4])
+            salary.append(a[5])
+        #there are very few rows (about 5 in 200,000) in which the salary level is unspecified. In this case, it is assumed to be below 50000
+        #this is because it could cause the predicator to predict an invalid '3rd type' salary level
+        salary_new=[]
+        for sal in salary:
+            sal=str(sal)
+            if sal.find('- 50000') != -1:
+                salary_new.append(0)
+            elif sal.find('50000+') != -1:
+                salary_new.append(1)
+            else:
+                salary_new.append(0)
+        salary=salary_new
+        return age,sex,education,industry,weeks_worked,salary    
+
     def load_data(self,sourcefile):
         #get file from HDFS
         print('Getting datasource from Hadoop File System...')
