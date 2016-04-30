@@ -98,6 +98,22 @@ class predictor:
         else:
             return 14
 
+    # Function to shrink weeks worked last year into smaller categories
+    # Used when combining data
+    def classifyWeek(self, code):
+        if code < 14:
+            return 6
+        elif (14 <= code and code <= 26):
+            return 5
+        elif (27 <= code and code <= 39):
+            return 4
+        elif (40 <= code and code <= 47):
+            return 3
+        elif (48 <= code and code <= 49):
+            return 2
+        else:
+            return 1
+
     # Function for cleaning the data set
     # Producing labels based on one's income and append it to table
     # Dropping the income column
@@ -133,6 +149,17 @@ class predictor:
         print 'The auc of the model is: ' + str(auc)
         print '\n'
 
+    # Function to return portion of the table used for aggregated data
+    def getData(self):
+        data = self.whole.iloc[0:50000]
+        features = data[['AGE', 'SEX', 'YEARSCH', 'INDUSTRY', 'WEEK89']]
+        features['WEEK89'] = features['WEEK89'].apply(self.classifyWeek)
+        labels = data['LABEL']
+        
+        print features, labels
+
+        return numpy.array(features), numpy.array(labels)
+
 if __name__ == '__main__':
     
     print 'Executing script for predicting salary'
@@ -149,18 +176,18 @@ if __name__ == '__main__':
     
     # Use getWhole() for dec_tree, getTable() for svm
     table = mPredictor.getTable()
-    whole_table = mPredictor.getWhole()
+    whole_table = mPredictor.getWhole().iloc[0:2000000]
 
     # Training and testing samples for svm
-    tr_sam = table.sample(50000)
-    ts_sam1 = table.sample(30000)
-    ts_sam2 = table.sample(30000)
-    ts_sam3 = table.sample(30000)
+    tr_sam = table.iloc[0:1000000].sample(50000)
+    ts_sam1 = table.iloc[1000000:2000000].sample(30000)
+    ts_sam2 = table.iloc[1000000:2000000].sample(30000)
+    ts_sam3 = table.iloc[1000000:2000000].sample(30000)
 
     # Testing samples for dec_tree
-    ts_sam1_w = whole_table.sample(300000)
-    ts_sam2_w = whole_table.sample(300000)
-    ts_sam3_w = whole_table.sample(300000)
+    ts_sam1_w = mPredictor.getWhole().iloc[2000000:].sample(300000)
+    ts_sam2_w = mPredictor.getWhole().iloc[2000000:].sample(300000)
+    ts_sam3_w = mPredictor.getWhole().iloc[2000000:].sample(300000)
 
     # Produce arrays of labels, each corresponding to the label of a row in the table
     tr_lab = numpy.array(tr_sam['LABEL'])
@@ -256,13 +283,13 @@ if __name__ == '__main__':
 
     print 'Evaluating prediction over the entire dataset (decision tree) \n'
 
-    print 'Sample1 (dec_tree)'
+    print 'Evaluating sample1 (dec_tree)'
     mPredictor.evaluate(ts_lab1_w, tree_res1)
 
-    print 'Sample2 (dec_tree)'
+    print 'Evaluating sample2 (dec_tree)'
     mPredictor.evaluate(ts_lab2_w, tree_res2)
 
-    print 'Sample3 (dec_tree)'
+    print 'Evaluating sample3 (dec_tree)'
     mPredictor.evaluate(ts_lab3_w, tree_res3)
 
     
