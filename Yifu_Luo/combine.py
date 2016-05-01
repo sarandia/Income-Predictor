@@ -22,7 +22,6 @@ def run():
 	p2=z_predictor('1','2')
 	p3=h_predictor()
 	p1.cleanData()
-	'''
 	x1,y1=p1.getData()
 	x2,y2=p2.combined_predict()
 	x3,y3=p3.format_data_combine('ss13pusb.csv')
@@ -54,13 +53,23 @@ def run():
 	dec_tree.fit(f_train, l_train)
 	tree_res1 = dec_tree.predict(f_test)
 	print 'Evaluating test sample 1 (svm)'
-        evaluate(l_test, tree_res1)
+        l_test_new=[]
+        tree_res1_new=[]
+        for i in range(len(tree_res1)):
+            if tree_res1[i]==1:
+                tree_res1_new.append(0)
+            else:
+                tree_res1_new.append(1)
+            if l_test[i]==1:
+                l_test_new.append(0)
+            else:
+                l_test_new.append(1)
+        evaluate(l_test_new, tree_res1_new)
 	print 'Training in process... (svm)'
 	classifier1 = svm.SVC()
 	classifier1.fit(f_train, l_train)
 	svm_res1 = classifier1.predict(f_test)
 	print 'Evaluating test sample 1 (svm)'
 	evaluate(l_test, svm_res1)
-'''
 if __name__== '__main__':
 	run()

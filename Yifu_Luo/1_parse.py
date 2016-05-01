@@ -40,7 +40,7 @@ class predictor:
 		start_time=time.time() 
 		mtable=train(trainning)
 		tr=mtable.iloc[0:100000]
-		tr2=mtable.iloc[0:10000]
+		tr2=mtable.iloc[0:100000]
 		tr_feature=tr.iloc[:,0:len(tr.columns.values)-1]
 		tr2_feature=tr2.iloc[:,0:len(tr2.columns.values)-1]
 		tr_label=numpy.array(tr['Label'])
