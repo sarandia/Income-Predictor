@@ -1,7 +1,6 @@
 import numpy
 import pandas
 import math
-from sklearn.svm import SVC
 from sklearn.naive_bayes import MultinomialNB
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.metrics import accuracy_score
@@ -17,9 +16,9 @@ class predictor:
         self.num_of_datapoints = 500000
 
         # classification range of salary
-        # e.g. if this number is 25000, the range will be:
+        # e.g. if this number is 25000, the levels will be:
         # 0 = [0 .. 24999], 1 = [25000 .. 49999], 2 = [50000 .. 74999], etc
-        self.classification_range = 25000
+        self.classification_range = 30000
 
         # portion of the testing data in relative to total data
         # 0.4 means 40% testing data and 60% training data
@@ -177,7 +176,8 @@ class predictor:
         for i in range(0, len(salary)):
             print salary[i], 'and', features[i]
         '''
-        return salary, features
+        from numpy import array
+        return array(salary), array(features)
 
     
     # train and predict the dataset
@@ -260,5 +260,6 @@ class predictor:
 
 if __name__ == '__main__':
     p = predictor()
+    # p.format_data_combine('ss13pusb.csv')
     p.load_data('ss13pusb.csv')
     p.run()
