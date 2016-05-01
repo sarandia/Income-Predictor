@@ -9,7 +9,6 @@ from sklearn.cross_validation import train_test_split
 from sklearn.linear_model import LinearRegression
 
 class predictor:
-
     def __init__(self):
         # matrix containing the data
         self.matrix = []
@@ -36,25 +35,23 @@ class predictor:
                                   'WAGP', 'WKHP', 'WKW', 'FOD1P', 'INDP']
 
         # useful features that could be use and single feature in prediction
-        self.useful_features = [3, 4, 5, 6, 7, 8, 10, 11, 12, 13]
-
         # list containing the index of features for prediction:
         # 0 = RT, 1 = SERIALNO, 2 = ST, 3 = AGEP, 4 = CIT, 5 = JWTR, 6 = MAR, 7 = SCHL, 8 = SEX,
         # 10 = WKHP, 11 = WKW, 12 = FOD1P, 13 = INDP
         # The list should not contains 9 because salary is target that we are trying to predict
+        self.useful_features = [3, 4, 5, 6, 7, 8, 10, 11, 12, 13]
 
 
-    # load the data from file into numpy array
-    def load_data(self, filename, num_of_instances=self.num_of_datapoints):
+    # load the data from file into numpy array for group combined project
+    def load_data(self, filename):
         # Read data from file
         # Use self.num_of_datapoints if it is set, else load all the file
         if self.num_of_datapoints is None:
             dataframe = pandas.read_csv(filename, na_values='', header=0, usecols=self.all_features_list)
         else:
             dataframe = pandas.read_csv(filename, na_values='', header=0, \
-                                        usecols=self.all_features_list, nrows=num_of_instances)
+                                        usecols=self.all_features_list, nrows=self.num_of_datapoints)
         self.matrix = dataframe.values
-
 
     # test the data loaded from file
     def test_data(self):
@@ -116,11 +113,12 @@ class predictor:
     # Returns a salary numpy array and a features numpy array for team work combination
     # The format of the features array is: 
     # [AGE, SEX, EDUCATION, INDUSTRY_CODE, WEEKS_WORKED_LAST_YEAR]
-    # which corresponds to our feature indexes: [3, 8, 7, 11, 13]
+    # which corresponds to our feature indexes: [3, 8, 7, 13, 11]
     # There are also important encoding fixtures in this function to make sure
     # the values of the features are compatible to group's data
     def format_data_combine(self, filename, feature_indexes=[3, 8, 7, 13, 11]):
-        self.load_data(filename, 50000)
+        self.num_of_datapoints = 50000
+        self.load_data(filename)
         salary = []
         features = []
         for person in self.matrix:
@@ -174,15 +172,16 @@ class predictor:
                         else:
                             salary.append(0)
                         features.append(tmp_datapoint)
-                
+        '''        
         # test for data formatting
         for i in range(0, len(salary)):
             print salary[i], 'and', features[i]
+        '''
         return salary, features
 
     
     # train and predict the dataset
-    def train_and_predict(self):        
+    def run(self):        
         # this portion contains classification test
         print 'Single feature prediction:'
         print 'Starting classification test...'
@@ -211,8 +210,8 @@ class predictor:
         for i in self.useful_features:
             salary, features = self.format_data([i], False)
         
-            feature_train, feature_test, target_train, target_test = train_test_split(features, salary, \
-                                                                                  test_size=self.test_portion, \
+            feature_train, feature_test, target_train, target_test = train_test_split(features, salary,\
+                                                                                  test_size=self.test_portion,\
                                                                                   random_state=42)
             reg = LinearRegression()
             reg.fit(feature_train, target_train)
@@ -245,13 +244,34 @@ class predictor:
 
         print '\n'
 
+    def classification(self, features_idx_array):
+            salary, features = self.format_data(features_idx_array, True)
+
+            # randomize the datapoints to avoid bias, also split the data into training and testing group
+            feature_train, feature_test, target_train, target_test = train_test_split(features, salary, \
+                                                                                      test_size=self.test_portion, \
+                                                                                      random_state=42)
+            names = ['Naive Bayes', 'Decision Tree']
+            clfs = [
+                MultinomialNB(),
+                DecisionTreeClassifier(min_samples_split=4, max_depth=6)]
+            features_names = [self.all_features_list[i] for i in features_idx_array]
+            for name, clf in zip(names, clfs):
+                clf.fit(feature_train, target_train)
+                pred = clf.predict(feature_test)
+                print 'Accuracy score for feature ',features_names,' with ', \
+                    name, ': ', accuracy_score(pred, target_test)
+
+            print '\n'
+        
 
 if __name__ == '__main__':
     p = predictor()
     # test for function returning numpy arrays for group combination
-    # p.format_data_combine('ss13pus.csv')
-    p.load_data('ss13pus.csv')
-
+    p.format_data_combine('ss13pusb.csv')
+    
+    # program code
+    # p.load_data('ss13pusb.csv')
     # p.test_data()
     # p.format_data([3], True)
-    p.train_and_predict()
+    # p.classification([3, 4])
