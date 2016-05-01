@@ -177,7 +177,7 @@ class predictor:
             print salary[i], 'and', features[i]
         '''
         from numpy import array
-        return array(salary), array(features)
+        return array(features), array(salary)
 
     
     # train and predict the dataset
@@ -260,6 +260,7 @@ class predictor:
 
 if __name__ == '__main__':
     p = predictor()
-    # p.format_data_combine('ss13pusb.csv')
+    # features, labels = p.format_data_combine('ss13pusb.csv')
+    # print type(features), type(labels)
     p.load_data('ss13pusb.csv')
     p.run()
