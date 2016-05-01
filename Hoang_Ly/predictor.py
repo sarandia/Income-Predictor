@@ -23,7 +23,7 @@ class predictor:
 
         # portion of the testing data in relative to total data
         # 0.4 means 40% testing data and 60% training data
-        self.test_portion = 0.3
+        self.test_portion = 0.25
 
         # the list of features of interest to use
         # [Record Type (RT), Housing serial number (SERIALNO), State (ST), Age (AGEP), 
@@ -182,96 +182,83 @@ class predictor:
     
     # train and predict the dataset
     def run(self):        
-        # this portion contains classification test
-        print 'Single feature prediction:'
+        # this portion contains classification test with single feature
+        print 'Single feature predictions:'
         print 'Starting classification test...'
         for i in self.useful_features:
-            salary, features = self.format_data([i], True)
+            self.classification([i])
 
-            # randomize the datapoints to avoid bias, also split the data into training and testing group
-            feature_train, feature_test, target_train, target_test = train_test_split(features, salary, \
-                                                                                      test_size=self.test_portion, \
-                                                                                      random_state=42)
-            names = ['Naive Bayes', 'Decision Tree']
-            clfs = [
-                MultinomialNB(),
-                DecisionTreeClassifier(min_samples_split=4, max_depth=6)]
-                            
-            for name, clf in zip(names, clfs):
-                clf.fit(feature_train, target_train)
-                pred = clf.predict(feature_test)
-                print 'Accuracy score for feature [', self.all_features_list[i],']: with ', \
-                    name, ': ', accuracy_score(pred, target_test)
-
-            print '\n'
-
-        # this portion contains regression test
+        # this portion contains regression test with single feature
         print "Starting regression test..."
         for i in self.useful_features:
-            salary, features = self.format_data([i], False)
+            self.regression([i])
+
+        print '\nTwo features predictions:'
+        # this portion contains classification on two features:
+        print 'Starting classification test...'
+        self.classification([10, 11])
+        self.classification([10, 12])
+        self.classification([7, 10])
+        self.classification([5, 10])
+
+        # this portion contains regression on two features:
+        self.regression([10, 11])
+        self.regression([10, 12])
+        self.regression([7, 10])
+        self.regression([5, 10])
+
+        print '\nAll features predictions:'
+        # this portion contains classifcation on all features
+        print 'Starting classification test...'
+        self.classification(self.useful_features)
+
+        # this portion contains regression on all features
+        print "Starting regression test..."
+        self.regression(self.useful_features)
         
-            feature_train, feature_test, target_train, target_test = train_test_split(features, salary,\
-                                                                                  test_size=self.test_portion,\
-                                                                                  random_state=42)
-            reg = LinearRegression()
-            reg.fit(feature_train, target_train)
 
-            pred = reg.predict(feature_test)
-            print 'R^2 score for feature [', self.all_features_list[i],']: with regression', \
-                reg.score(feature_test, target_test)
-
-        # this portion contains prediction using two most useful single features from result above:
-        # WKHP = usual work hours in the last 12 months (index 10)
-        # WKW = weeks work in the last 12 months (index 11)
-        print '\nStarting prediction using two features...'
-        salary, features = self.format_data([10, 11], True)
-
+    # classification test on list of features
+    # features_idx_array should contains the indexes of the features that we want to predict on.
+    # The indexes come from: 3 = AGEP, 4 = CIT, 5 = JWTR, 6 = MAR, 7 = SCHL, 8 = SEX,
+    # 10 = WKHP, 11 = WKW, 12 = FOD1P, 13 = INDP
+    # For example, features_idx_array = [7, 10] means we want [SCHL, WKHP] as features
+    def classification(self, features_idx_array):
+        salary, features = self.format_data(features_idx_array, True)
+        
         # randomize the datapoints to avoid bias, also split the data into training and testing group
-        feature_train, feature_test, target_train, target_test = train_test_split(features, salary,\
-                                                                                  test_size=self.test_portion,\
+        feature_train, feature_test, target_train, target_test = train_test_split(features, salary, \
+                                                                                  test_size=self.test_portion, \
                                                                                   random_state=42)
-        
+        # list of classification classifiers used in this prediction
+        # more classifier could be added into both names and clfs
         names = ['Naive Bayes', 'Decision Tree']
         clfs = [
             MultinomialNB(),
             DecisionTreeClassifier(min_samples_split=4, max_depth=6)]
-                            
+        features_names = [self.all_features_list[i] for i in features_idx_array]
         for name, clf in zip(names, clfs):
             clf.fit(feature_train, target_train)
             pred = clf.predict(feature_test)
-            print 'Accuracy score for features [WKHP, WKW]: with ', \
+            print 'Accuracy score for feature ',features_names,' with ', \
                 name, ': ', accuracy_score(pred, target_test)
-
         print '\n'
+ 
 
-    def classification(self, features_idx_array):
-            salary, features = self.format_data(features_idx_array, True)
-
-            # randomize the datapoints to avoid bias, also split the data into training and testing group
-            feature_train, feature_test, target_train, target_test = train_test_split(features, salary, \
-                                                                                      test_size=self.test_portion, \
-                                                                                      random_state=42)
-            names = ['Naive Bayes', 'Decision Tree']
-            clfs = [
-                MultinomialNB(),
-                DecisionTreeClassifier(min_samples_split=4, max_depth=6)]
-            features_names = [self.all_features_list[i] for i in features_idx_array]
-            for name, clf in zip(names, clfs):
-                clf.fit(feature_train, target_train)
-                pred = clf.predict(feature_test)
-                print 'Accuracy score for feature ',features_names,' with ', \
-                    name, ': ', accuracy_score(pred, target_test)
-
-            print '\n'
+    # regression test on list of features
+    def regression(self, features_idx_array):
+        salary, features = self.format_data(features_idx_array, False)
+        
+        feature_train, feature_test, target_train, target_test = train_test_split(features, salary,\
+                                                                                  test_size=self.test_portion,\
+                                                                                  random_state=42)
+        reg = LinearRegression()
+        reg.fit(feature_train, target_train)
+        features_names = [self.all_features_list[i] for i in features_idx_array]
+        pred = reg.predict(feature_test)
+        print 'R^2 score for feature ',features_names,' with regression', reg.score(feature_test, target_test)
         
 
 if __name__ == '__main__':
     p = predictor()
-    # test for function returning numpy arrays for group combination
-    p.format_data_combine('ss13pusb.csv')
-    
-    # program code
-    # p.load_data('ss13pusb.csv')
-    # p.test_data()
-    # p.format_data([3], True)
-    # p.classification([3, 4])
+    p.load_data('ss13pusb.csv')
+    p.run()
